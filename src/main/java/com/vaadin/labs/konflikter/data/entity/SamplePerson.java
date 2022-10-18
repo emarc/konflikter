@@ -1,12 +1,17 @@
 package com.vaadin.labs.konflikter.data.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.validation.constraints.Email;
 import java.time.LocalDate;
+
 import javax.annotation.Nonnull;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Version;
+import jakarta.validation.constraints.Email;
 
 @Entity
 public class SamplePerson extends AbstractEntity {
+    @Version
+    private Long version;
 
     @Nonnull
     private String firstName;

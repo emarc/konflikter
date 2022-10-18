@@ -1,5 +1,13 @@
 package com.vaadin.labs.konflikter.views.masterdetail;
 
+import java.time.LocalDate;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -10,12 +18,12 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.data.renderer.LitRenderer;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -24,13 +32,10 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
+import com.vaadin.labs.konflikter.ConflictResolutionBinder;
 import com.vaadin.labs.konflikter.data.entity.SamplePerson;
 import com.vaadin.labs.konflikter.data.service.SamplePersonService;
 import com.vaadin.labs.konflikter.views.MainLayout;
-import java.util.Optional;
-import java.util.UUID;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 
 @PageTitle("Master-Detail")
 @Route(value = "master-detail/:samplePersonID?/:action?(edit)", layout = MainLayout.class)
@@ -54,11 +59,13 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
     private final Button cancel = new Button("Cancel");
     private final Button save = new Button("Save");
 
-    private final BeanValidationBinder<SamplePerson> binder;
+    private final ConflictResolutionBinder<SamplePerson> binder;
 
     private SamplePerson samplePerson;
 
     private final SamplePersonService samplePersonService;
+
+    private Label conflictMessage = new Label("The record has been changed by someone else. Review changes and save again.");
 
     @Autowired
     public MasterDetailView(SamplePersonService samplePersonService) {
@@ -105,7 +112,8 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
         });
 
         // Configure Form
-        binder = new BeanValidationBinder<>(SamplePerson.class);
+        binder = new ConflictResolutionBinder<>(SamplePerson.class);
+        binder.setConflictMessage(conflictMessage);
 
         // Bind fields. This is where you'd define e.g. validation rules
 
@@ -129,7 +137,13 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
                 UI.getCurrent().navigate(MasterDetailView.class);
             } catch (ValidationException validationException) {
                 Notification.show("An exception happened while trying to store the samplePerson details.");
+            } 
+            catch (ObjectOptimisticLockingFailureException lockingException) {
+                this.samplePerson = samplePersonService.get((UUID) lockingException.getIdentifier()).get();
+                Notification.show("The record was updated! Please review and resolve potential conflicts.");
+                binder.merge(this.samplePerson);
             }
+            
         });
 
     }
@@ -141,6 +155,7 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
             Optional<SamplePerson> samplePersonFromBackend = samplePersonService.get(samplePersonId.get());
             if (samplePersonFromBackend.isPresent()) {
                 populateForm(samplePersonFromBackend.get());
+                createConflict(samplePersonFromBackend.get());
             } else {
                 Notification.show(
                         String.format("The requested samplePerson was not found, ID = %s", samplePersonId.get()), 3000,
@@ -151,6 +166,13 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
                 event.forwardTo(MasterDetailView.class);
             }
         }
+    }
+
+    private void createConflict(SamplePerson samplePerson) {
+        LocalDate bd = samplePerson.getDateOfBirth();
+        samplePerson.setDateOfBirth(bd.plusDays(1));
+        samplePerson.setEmail(samplePerson.getEmail() + ".com");
+        samplePersonService.update(samplePerson);
     }
 
     private void createEditorLayout(SplitLayout splitLayout) {
@@ -172,6 +194,13 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
         formLayout.add(firstName, lastName, email, phone, dateOfBirth, occupation, important);
 
         editorDiv.add(formLayout);
+
+        editorLayoutDiv.add(conflictMessage);
+        conflictMessage.setVisible(false);
+        conflictMessage.setClassName("text-xs p-s");
+        conflictMessage.getStyle().set("background-color", "orange");
+        conflictMessage.getStyle().set("color", "white");
+
         createButtonLayout(editorLayoutDiv);
 
         splitLayout.addToSecondary(editorLayoutDiv);

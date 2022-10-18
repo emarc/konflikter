@@ -1,11 +1,15 @@
 package com.vaadin.labs.konflikter.data.entity;
 
-import jakarta.persistence.Entity;
 import javax.annotation.Nonnull;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Version;
 
 @Entity
 public class SampleAddress extends AbstractEntity {
-
+    @Version
+    private Long version;
+    
     @Nonnull
     private String street;
     @Nonnull

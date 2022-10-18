@@ -10,9 +10,9 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.labs.konflikter.ConflictResolutionBinder;
 import com.vaadin.labs.konflikter.data.entity.SampleAddress;
 import com.vaadin.labs.konflikter.data.service.SampleAddressService;
 import com.vaadin.labs.konflikter.views.MainLayout;
@@ -30,7 +30,7 @@ public class AddressFormView extends Div {
     private Button cancel = new Button("Cancel");
     private Button save = new Button("Save");
 
-    private Binder<SampleAddress> binder = new Binder<>(SampleAddress.class);
+    private ConflictResolutionBinder<SampleAddress> binder = new ConflictResolutionBinder<>(SampleAddress.class);
 
     public AddressFormView(SampleAddressService addressService) {
         addClassName("address-form-view");
