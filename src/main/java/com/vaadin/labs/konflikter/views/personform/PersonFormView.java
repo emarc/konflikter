@@ -75,6 +75,7 @@ public class PersonFormView extends Div {
         conflictMessage.setClassName("text-xs p-s");
         conflictMessage.getStyle().set("background-color", "orange");
         conflictMessage.getStyle().set("color", "white");
+        conflictMessage.getStyle().set("display", "block");
         add(createButtonLayout());
 
         binder.bindInstanceFields(this);

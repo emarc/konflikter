@@ -1,6 +1,7 @@
 package com.vaadin.labs.konflikter.views;
 
 
+import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.html.Footer;
@@ -12,8 +13,6 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.labs.konflikter.components.appnav.AppNav;
 import com.vaadin.labs.konflikter.components.appnav.AppNavItem;
-import com.vaadin.labs.konflikter.views.addressform.AddressFormView;
-import com.vaadin.labs.konflikter.views.creditcardform.CreditCardFormView;
 import com.vaadin.labs.konflikter.views.masterdetail.MasterDetailView;
 import com.vaadin.labs.konflikter.views.personform.PersonFormView;
 
@@ -57,15 +56,13 @@ public class MainLayout extends AppLayout {
 
         nav.addItem(new AppNavItem("Master-Detail", MasterDetailView.class, "la la-columns"));
         nav.addItem(new AppNavItem("Person Form", PersonFormView.class, "la la-user"));
-        nav.addItem(new AppNavItem("Address Form", AddressFormView.class, "la la-map-marker"));
-        nav.addItem(new AppNavItem("Credit Card Form", CreditCardFormView.class, "la la-credit-card"));
 
         return nav;
     }
 
     private Footer createFooter() {
         Footer layout = new Footer();
-
+        layout.add(new Html("<div>Somebody seems to be editing exactly the same items you are, but luckily this application has conflict resolution.<hr/>Master-Detail uses actual JPA optimistic locking, while Person Form just juggles two entities.</div>"));
         return layout;
     }
 
