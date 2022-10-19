@@ -65,7 +65,7 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
 
     private final SamplePersonService samplePersonService;
 
-    private Label conflictMessage = new Label("The record has been changed by someone else. Review changes and save again.");
+    private Div conflictMessage = new Div(new Label("The record has been changed by someone else. Review changes and save again."));
 
     @Autowired
     public MasterDetailView(SamplePersonService samplePersonService) {
@@ -169,6 +169,7 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
 
     private void createConflict(SamplePerson samplePerson) {
         LocalDate bd = samplePerson.getDateOfBirth();
+        if (bd == null) bd = LocalDate.of(2000, 11, 15);
         samplePerson.setDateOfBirth(bd.plusDays(1));
         samplePerson.setEmail(samplePerson.getEmail() + ".com");
         samplePersonService.update(samplePerson);

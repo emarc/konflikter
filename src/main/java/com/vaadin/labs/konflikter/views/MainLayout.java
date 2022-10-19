@@ -62,7 +62,7 @@ public class MainLayout extends AppLayout {
 
     private Footer createFooter() {
         Footer layout = new Footer();
-        layout.add(new Html("<div>Somebody seems to be editing exactly the same items you are, but luckily this application has conflict resolution.<hr/>Master-Detail uses actual JPA optimistic locking, while Person Form just juggles two entities.</div>"));
+        layout.add(new Html("<div><b>Edit some things and save</b><br/>Somebody seems to be editing exactly the same items you are, but luckily this application has conflict resolution.<hr/>Master-Detail uses actual JPA optimistic locking, while Person Form just juggles two entities.</div>"));
         return layout;
     }
 

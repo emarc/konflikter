@@ -63,7 +63,7 @@ public class PersonFormView extends Div {
 
     SampleEntity sampleEntity = new SampleEntity();
     SampleEntity conflictEntity = new SampleEntity();
-    private Label conflictMessage = new Label("The record has been changed by someone else. Review changes and save again.");
+    private Div conflictMessage = new Div(new Label("The record has been changed by someone else. Review changes and save again."));
 
     public PersonFormView() {
         addClassName("person-form-view");
@@ -75,7 +75,6 @@ public class PersonFormView extends Div {
         conflictMessage.setClassName("text-xs p-s");
         conflictMessage.getStyle().set("background-color", "orange");
         conflictMessage.getStyle().set("color", "white");
-        conflictMessage.getStyle().set("display", "block");
         add(createButtonLayout());
 
         binder.bindInstanceFields(this);
