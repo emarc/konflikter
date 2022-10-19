@@ -140,7 +140,6 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
             } 
             catch (ObjectOptimisticLockingFailureException lockingException) {
                 this.samplePerson = samplePersonService.get((UUID) lockingException.getIdentifier()).get();
-                Notification.show("The record was updated! Please review and resolve potential conflicts.");
                 binder.merge(this.samplePerson);
             }
             

@@ -87,7 +87,6 @@ public class PersonFormView extends Div {
         save.addClickListener(e -> {
             
             if (sampleEntity.getVersion() != conflictEntity.getVersion()) {
-                Notification.show("The record was updated! Please review and resolve potential conflicts.");
                 sampleEntity.setVersion(conflictEntity.getVersion());
                 binder.merge(conflictEntity);
 
