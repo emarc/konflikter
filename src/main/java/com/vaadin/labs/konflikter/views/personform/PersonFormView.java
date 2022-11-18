@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import javax.annotation.Nonnull;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -63,7 +64,11 @@ public class PersonFormView extends Div {
 
     SampleEntity sampleEntity = new SampleEntity();
     SampleEntity conflictEntity = new SampleEntity();
-    private Div conflictMessage = new Div(new Label("The record has been changed by someone else. Review changes and save again."));
+    private Div conflictMessage = new Div(
+            new Label("The record has been changed by someone else. Review changes and save again."),
+            new Button("Refresh non-conflicting updates.", click -> {
+                binder.resolveNonconflicting();
+            }));
 
     public PersonFormView() {
         addClassName("person-form-view");
@@ -84,7 +89,7 @@ public class PersonFormView extends Div {
 
         cancel.addClickListener(e -> clearForm());
         save.addClickListener(e -> {
-            
+
             if (sampleEntity.getVersion() != conflictEntity.getVersion()) {
                 sampleEntity.setVersion(conflictEntity.getVersion());
                 binder.merge(conflictEntity);
@@ -150,7 +155,7 @@ public class PersonFormView extends Div {
             countryCode.setPlaceholder("Country");
             countryCode.setPattern("\\+\\d*");
             countryCode.setPreventInvalidInput(true);
-            countryCode.setItems("+354", "+91", "+62", "+98", "+964", "+353", "+44", "+972", "+39", "+225");
+            countryCode.setItems("+358", "+91", "+62", "+98", "+964", "+353", "+44", "+972", "+39", "+225");
             countryCode.addCustomValueSetListener(e -> countryCode.setValue(e.getDetail()));
             number.setPattern("\\d*");
             number.setPreventInvalidInput(true);
@@ -227,7 +232,7 @@ public class PersonFormView extends Div {
         @Nonnull
         private String email = "jd@email.com";
         @Nonnull
-        private String phone = "5551234567890";
+        private String phone = "+358 5551234567890";
         private LocalDate dateOfBirth = LocalDate.of(2000, 11, 15);
         @Nonnull
         private String occupation = "Vaadiner";
@@ -343,7 +348,7 @@ public class PersonFormView extends Div {
         @Nonnull
         private String cardNumber = "1234567890123456";
         @Nonnull
-        private String cardholderName = lastName.toUpperCase() + " " +  firstName.toUpperCase();
+        private String cardholderName = lastName.toUpperCase() + " " + firstName.toUpperCase();
         @Nonnull
         private Integer month = 11;
         @Nonnull
@@ -392,17 +397,25 @@ public class PersonFormView extends Div {
         }
 
         protected void createConflict() {
-            if (Math.random() > 0.2) this.phone = "555" + this.phone;
-            if (Math.random() > 0.2) this.cardNumber = this.cardNumber + "1234";
-            if (Math.random() > 0.2) this.city = "Turku";
-            if (Math.random() > 0.2) this.csc = "" + Math.round(Math.random() * 1000 + 1000);
-            if (this.dateOfBirth != null && Math.random() > 0.2) this.dateOfBirth = this.dateOfBirth.plusDays(1);
-            if (Math.random() > 0.2) this.email += ".com";
-            if (Math.random() > 0.2) this.postalCode = "" + Math.round(Math.random() * 1000 + 1000);
-            if (Math.random() > 0.2) this.year = Double.valueOf(Math.random() * 5 + 20).intValue();
+            if (Math.random() > 0.2)
+                this.phone = "+44 " + this.phone;
+            if (Math.random() > 0.2)
+                this.cardNumber = this.cardNumber + "1234";
+            if (Math.random() > 0.2)
+                this.city = "Turku";
+            if (Math.random() > 0.2)
+                this.csc = "" + Math.round(Math.random() * 1000 + 1000);
+            if (this.dateOfBirth != null && Math.random() > 0.2)
+                this.dateOfBirth = this.dateOfBirth.plusDays(1);
+            if (Math.random() > 0.2)
+                this.email += ".com";
+            if (Math.random() > 0.2)
+                this.postalCode = "" + Math.round(Math.random() * 1000 + 1000);
+            if (Math.random() > 0.2)
+                this.year = Double.valueOf(Math.random() * 5 + 20).intValue();
             this.version++;
         }
-        
+
     }
 
 }

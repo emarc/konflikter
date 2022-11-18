@@ -8,18 +8,14 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.HasHelper;
 import com.vaadin.flow.component.HasStyle;
-import com.vaadin.flow.component.HasText;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.HasValue.ValueChangeEvent;
 import com.vaadin.flow.component.HasValue.ValueChangeListener;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.select.Select;
+import com.vaadin.flow.component.select.SelectVariant;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.shared.Registration;
 
@@ -27,6 +23,11 @@ import com.vaadin.flow.shared.Registration;
  * Binder with enhancements for conflict resolution.
  */
 public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
+
+    public static final String CLASSNAME_EDITED = "edited";
+    public static final String CLASSNAME_UPDATED = "updated";
+    public static final String CLASSNAME_MATCH = "match";
+    public static final String CLASSNAME_CONFLICT = "conflict";
 
     protected Set<Binding<BEAN, ?>> changedBindings = new LinkedHashSet<>();
     Map<Binding<BEAN, ?>, Object> originalValues;
@@ -40,6 +41,10 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
         super(beanType, scanNestedDefinitions);
     }
 
+    /*
+     * Analog to setStatusLabel() but intended to be hidden/shown in the form,
+     * because I'm not sure how you're supposed to style it in a sane way otherwise.
+     */
     public void setConflictMessage(Component message) {
         this.conflictMessage = message;
     }
@@ -54,26 +59,24 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
 
     @Override
     protected void handleFieldValueChange(Binding<BEAN, ?> binding) {
+        // This is really just visually indicating fields and making
+        // hasMergableChanges() work – and the latter should be renamed.
         this.changedBindings.add(binding);
-
         HasValue<?, ?> field = binding.getField();
         applyEditedStyle(field);
         super.handleFieldValueChange(binding);
     }
 
     protected void applyEditedStyle(HasValue<?, ?> field) {
+
         if (field instanceof HasStyle) {
-            // TODO theme variant or something?
-            ((HasStyle) field).getStyle().set("font-style", "italic");
-            ((HasStyle) field).getStyle().set("color", "var(--lumo-primary-text-color");
+            ((HasStyle) field).addClassName(CLASSNAME_EDITED);
         }
     }
 
     protected void removeEditedStyle(HasValue<?, ?> field) {
         if (field instanceof HasStyle) {
-            // TODO theme variant or something?
-            ((HasStyle) field).getStyle().remove("font-style");
-            ((HasStyle) field).getStyle().remove("color");
+            ((HasStyle) field).removeClassName(CLASSNAME_EDITED);
         }
     }
 
@@ -81,10 +84,6 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
         getBindings().forEach(binding -> {
             removeEditedStyle(binding.getField());
         });
-    }
-
-    public boolean hasMergableChanges() {
-        return !this.changedBindings.isEmpty();
     }
 
     @Override
@@ -141,17 +140,9 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
         this.originalValues = readFieldValues();
     }
 
-    public void removeMergeHelpers() {
-        getBindings().forEach(binding -> {
-            if (binding.getField() instanceof HasHelper) {
-                HasHelper hf = (HasHelper) binding.getField();
-                if (hf.getHelperComponent() instanceof MergeHelper) {
-                    hf.setHelperComponent(null);
-                }
-            }
-        });
-    }
-
+    /*
+     * TODO probably put MergeHelpers in Map to aid removing and fiddling
+     */
     public void merge(BEAN otherBean) {
         removeMergeHelpers();
 
@@ -165,17 +156,13 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
 
         getBindings().forEach(binding -> {
             HasValue<?, ?> field = binding.getField();
-            Object current = field.getValue();
             Object orig = this.originalValues.get(binding);
             Object other = otherValues.get(binding);
 
-            if (!Objects.equals(current, orig) || !Objects.equals(orig, other)) {
-                // Some values differ, let's show the helper
-                if (field instanceof HasHelper) {
-                    ((HasHelper) field).setHelperComponent(new MergeHelper(field, other, orig));
-                } else {
-                    // TODO e.g checkbox does not work
-                }
+            if (field instanceof HasHelper) {
+                ((HasHelper) field).setHelperComponent(new MergeHelperDropdown(field, other, orig));
+            } else {
+                // TODO e.g checkbox does not work
             }
 
         });
@@ -183,24 +170,45 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
         setConflictMessageVisible(true);
     }
 
-    public static class MergeHelper<V> extends Span {
+    public void removeMergeHelpers() {
+        getBindings().forEach(binding -> {
+            if (binding.getField() instanceof HasHelper) {
+                HasHelper hf = (HasHelper) binding.getField();
+                if (hf.getHelperComponent() instanceof MergeHelper) {
+                    hf.setHelperComponent(null);
+                }
+            }
+        });
+    }
 
-        HasValue<?, V> field;
-        HasHelper helperField;
+    /*
+     * TODO rename to hasChanges() or something like that?
+     */
+    public boolean hasMergableChanges() {
+        return !this.changedBindings.isEmpty();
+    }
 
-        String originalHelperText;
-        Component originalHelperComponent;
+    public void resolveNonconflicting() {
+        getBindings().forEach(binding -> {
+            if (binding.getField() instanceof HasHelper) {
+                HasHelper hf = (HasHelper) binding.getField();
+                if (hf.getHelperComponent() instanceof MergeHelper) {
+                    ((MergeHelper)hf.getHelperComponent()).resolveNonconflicting();
+                }
+            }
+        });
+    }
 
-        V dbValue;
-        V currentValue;
-        V origValue;
+    public static abstract class MergeHelper<V> extends Span {
+        protected HasValue<?, V> field;
+        protected HasHelper helperField;
 
-        Button orig = new Button(VaadinIcon.CLOCK.create());
-        Button db = new Button(VaadinIcon.DATABASE.create());
-        Button current = new Button(VaadinIcon.EDIT.create());
-        Button active = current;
+        protected String originalHelperText;
+        protected Component originalHelperComponent;
 
-        Registration changeRegistration;
+        protected V dbValue;
+        protected V currentValue;
+        protected V origValue;
 
         public MergeHelper(HasValue<?, V> field, V dbValue, V origValue) {
             this.field = field;
@@ -213,123 +221,138 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
                 this.originalHelperText = this.helperField.getHelperText();
                 this.originalHelperComponent = this.helperField.getHelperComponent();
             }
+        }
 
-            orig.addClickListener(click -> {
-                activate(orig);
+        protected boolean isEdited() {
+            return !Objects.equals(origValue, currentValue);
+        }
+
+        protected boolean isUpdated() {
+            return !Objects.equals(dbValue, origValue);
+        }
+
+        protected boolean isConflict() {
+            return isUpdated() && isEdited() && !Objects.equals(currentValue, dbValue);
+        }
+
+        protected boolean isMatch() {
+            return isUpdated() && isEdited() && Objects.equals(currentValue, dbValue);
+        }
+
+        abstract void resolveNonconflicting();
+    }
+
+    public static class MergeHelperDropdown<V> extends MergeHelper<V> {
+
+        enum Resolution {
+            KEEP("My edit"),
+            REFRESH("Refreshed value"),
+            ORIGINAL("Original value");
+
+            private String name;
+
+            Resolution(String name) {
+                this.name = name;
+            }
+
+            @Override
+            public String toString() {
+                return name;
+            }
+        }
+
+        protected Select<Resolution> select = new Select<>();
+        Registration changeRegistration;
+
+        public MergeHelperDropdown(HasValue<?, V> field, V dbValue, V origValue) {
+            super(field, dbValue, origValue);
+
+            select.addThemeVariants(SelectVariant.LUMO_SMALL);
+            select.setItems(Resolution.values());
+            select.addValueChangeListener(change -> {
+                // TODO Can get null here if strange things happen;
+                // i.e if db/orig value does not validate; "should not happen", but... needs fix
+                switch (change.getValue()) {
+                    case KEEP:
+                        field.setValue(currentValue);
+                        break;
+                    case REFRESH:
+                        field.setValue(dbValue);
+                        break;
+                    case ORIGINAL:
+                        field.setValue(origValue);
+                        break;
+                }
             });
-
-            db.addClickListener(click -> {
-                activate(db);
-            });
-
-            current.addClickListener(click -> {
-                activate(current);
-            });
-
-            orig.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_TERTIARY);
-            db.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_TERTIARY);
-            current.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_TERTIARY);
-            orig.setClassName("m-0 text-xs rounded-none");
-            db.setClassName("m-0 text-xs rounded-none");
-            current.setClassName("m-0 text-xs rounded-none");
-            orig.getStyle().set("color", "var(--lumo-secondary-text-color)");
-            db.getStyle().set("color", "var(--lumo-error-text-color)");
-            current.getStyle().set("color", "var(--lumo-primary-text-color)");
-
-            updateButtons();
-
-            add(current, db, orig);
-
-            orig.getElement().setProperty("title", "Original value: " + origValue);
-            db.getElement().setProperty("title", "Value in database: " + dbValue);
-            current.getElement().setProperty("title", "Your value: " + currentValue);
+            add(select);
 
             changeRegistration = field.addValueChangeListener((ValueChangeListener<ValueChangeEvent<V>>) change -> {
                 if (change.isFromClient()) {
                     currentValue = change.getValue();
-                    updateButtons();
-                    activate(current);
+                    update();
                 }
             });
+
+            update();
         }
 
-        private void updateButtons() {
-            current.setVisible(true);
-            orig.setVisible(true);
-            db.setVisible(true);
-            if (Objects.equals(origValue, currentValue)) {
-                // Not edited
-                current.setVisible(false);
-                if (Objects.equals(origValue, dbValue)) {
-                    // no conflict
-                    db.setVisible(false);
-                    activate(orig);
-                } else {
-                    activate(db);
+        private void update() {
+            select.setClassName(null);
+            select.setVisible(true);
+            select.setValue(null);
+            // Disable choices that are not available
+            select.setItemEnabledProvider(item -> {
+                switch (item) {
+                    case KEEP:
+                        return isEdited();
+                    case REFRESH:
+                        return isUpdated();
+                    default:
+                        return true;
                 }
-            } else {
+            });
+
+            if (isEdited()) {
                 // Edited
-                if (Objects.equals(currentValue, dbValue)) {
-                    // no conflict, but odd to hide the edit
-                    // TODO needs UX thought
-                    // current.setVisible(false);
-                    activate(current);
-                } else if (Objects.equals(dbValue, origValue)) {
-                    // not changed in db
-                    db.setVisible(false);
-                    activate(current);
+                if (isMatch()) {
+                    // no conflict, but odd to hide the edit?
+                    select.setPlaceholder("Edit = update");
+                    select.setClassName("mergehelper " + CLASSNAME_MATCH);
+                } else if (!isUpdated()) {
+                    // edited, not changed in db
+                    select.setPlaceholder("Edited");
+                    select.setClassName("mergehelper " + CLASSNAME_EDITED);
+                    select.setValue(Resolution.KEEP);
                 } else {
-                    activate(current);
+                    // conflict, all differs
+                    select.setPlaceholder("Conflict");
+                    select.setClassName("mergehelper " + CLASSNAME_CONFLICT);
                 }
 
-            }
-        }
-
-        private void activate(Button b) {
-            if (active != null) {
-                active.getStyle().remove("border-top");
-            }
-            active = b;
-
-            if (b == orig) {
-                field.setValue(origValue);
-                if (field instanceof TextField) {
-                    ((TextField) field).getStyle().remove("color");
-                }
-                b.getStyle().set("border-top", "2px solid var(--lumo-secondary-text-color)");
-            } else if (b == db) {
-                field.setValue(dbValue);
-                if (field instanceof TextField) {
-                    ((TextField) field).getStyle().set("color", "var(--lumo-error-text-color)");
-                }
-                b.getStyle().set("border-top", "2px solid var(--lumo-error-text-color)");
             } else {
-                field.setValue(currentValue);
-                if (field instanceof TextField) {
-                    ((TextField) field).getStyle().set("color", "var(--lumo-primary-text-color)");
+                // Not edited
+                if (Objects.equals(origValue, dbValue)) {
+                    // not edited, not changed
+                    select.setVisible(false);
+                } else {
+                    // not edited, but changed
+                    select.setPlaceholder("Update available");
+                    select.setClassName("mergehelper " + CLASSNAME_UPDATED);
                 }
-                b.getStyle().set("border-top", "2px solid var(--lumo-primary-text-color)");
+
             }
         }
 
         @Override
-        protected void onDetach(DetachEvent detachEvent) {
-            if (this.helperField != null) {
-                if (this.originalHelperText != null) {
-                    this.helperField.setHelperText(this.originalHelperText);
-                }
-                if (this.originalHelperComponent != null) {
-                    this.helperField.setHelperComponent(this.originalHelperComponent);
-                }
+        void resolveNonconflicting() {
+            if (isConflict()) {
+                return;
+            } else if (isEdited()) {
+                select.setValue(Resolution.KEEP);
+            } else if (isUpdated()) {
+                select.setValue(Resolution.REFRESH);
             }
-            if (changeRegistration != null) {
-                changeRegistration.remove();
-                changeRegistration = null;
-            }
-            this.field = null;
-            super.onDetach(detachEvent);
         }
-
     }
 
 }

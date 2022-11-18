@@ -59,13 +59,17 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
     private final Button cancel = new Button("Cancel");
     private final Button save = new Button("Save");
 
-    private final ConflictResolutionBinder<SamplePerson> binder;
+    private final ConflictResolutionBinder<SamplePerson> binder = new ConflictResolutionBinder<>(SamplePerson.class);
 
     private SamplePerson samplePerson;
 
     private final SamplePersonService samplePersonService;
 
-    private Div conflictMessage = new Div(new Label("The record has been changed by someone else. Review changes and save again."));
+    private Div conflictMessage = new Div(
+        new Label("The record has been changed by someone else. Review changes and save again."), 
+        new Button("Refresh non-conflicting updates.", click -> {
+        binder.resolveNonconflicting();
+    }));
 
     @Autowired
     public MasterDetailView(SamplePersonService samplePersonService) {
@@ -112,7 +116,6 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
         });
 
         // Configure Form
-        binder = new ConflictResolutionBinder<>(SamplePerson.class);
         binder.setConflictMessage(conflictMessage);
 
         // Bind fields. This is where you'd define e.g. validation rules

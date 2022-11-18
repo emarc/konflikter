@@ -1,0 +1,32 @@
+:host(.mergehelper) {
+  text-transform: uppercase;
+  padding: 0;
+}
+:host(.mergehelper) [part='toggle-button']::before {
+    content: var(--lumo-icons-angle-up);
+}
+:host(.mergehelper) [part='input-field'] {
+  color: var(--lumo-secondary-text-color);
+  background-color: var(--lumo-base-color);
+  padding: 0;
+  --lumo-font-size-m: var(--lumo-font-size-xxs);
+  --lumo-text-field-size: var(--lumo-size-xs);
+  --_lumo-selected-item-padding: 0;
+  --_lumo-selected-item-height: var(--lumo-size-xs);
+}
+:host(.mergehelper) [part='input-field'] ::slotted([slot='value']:not([placeholder])) {
+    color: var(--lumo-success-text-color);
+}
+:host(.mergehelper.edited) [part='input-field'] {
+  color: var(--lumo-body-text-color);
+}
+:host(.mergehelper.updated) [part='input-field'] {
+  color: var(--lumo-primary-text-color);
+}
+:host(.mergehelper.conflict) [part='input-field'] {
+  color: var(--lumo-error-text-color);
+}
+:host(.mergehelper.match) [part='input-field'] {
+    color: var(--lumo-success-text-color);
+}
+
