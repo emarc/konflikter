@@ -181,11 +181,21 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
         });
     }
 
-    /*
-     * TODO rename to hasChanges() or something like that?
-     */
-    public boolean hasMergableChanges() {
+    public boolean isEdited() {
         return !this.changedBindings.isEmpty();
+    }
+
+    public boolean isResolved() {
+        return !getBindings().stream().anyMatch(binding -> {
+            if (binding.getField() instanceof HasHelper) {
+                HasHelper hf = (HasHelper) binding.getField();
+                if (hf.getHelperComponent() instanceof MergeHelper) {
+                    MergeHelper<?> mh = (MergeHelper<?>) hf.getHelperComponent();
+                    return !mh.isResolved();
+                }
+            }
+            return false;
+        });
     }
 
     public void resolveNonconflicting() {
@@ -193,7 +203,7 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
             if (binding.getField() instanceof HasHelper) {
                 HasHelper hf = (HasHelper) binding.getField();
                 if (hf.getHelperComponent() instanceof MergeHelper) {
-                    ((MergeHelper)hf.getHelperComponent()).resolveNonconflicting();
+                    ((MergeHelper<?>) hf.getHelperComponent()).resolveNonconflicting();
                 }
             }
         });
@@ -240,10 +250,11 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
         }
 
         abstract void resolveNonconflicting();
+
+        abstract boolean isResolved();
     }
 
     public static class MergeHelperDropdown<V> extends MergeHelper<V> {
-
         enum Resolution {
             KEEP("My edit"),
             REFRESH("Refreshed value"),
@@ -269,9 +280,11 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
 
             select.addThemeVariants(SelectVariant.LUMO_SMALL);
             select.setItems(Resolution.values());
-            select.addValueChangeListener(change -> {
-                // TODO Can get null here if strange things happen;
-                // i.e if db/orig value does not validate; "should not happen", but... needs fix
+            select.addValueChangeListener(change -> {        
+                // TODO Not sure why the phone field sends null here...
+                if (change.getValue() == null) {
+                    return;
+                }
                 switch (change.getValue()) {
                     case KEEP:
                         field.setValue(currentValue);
@@ -352,6 +365,11 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
             } else if (isUpdated()) {
                 select.setValue(Resolution.REFRESH);
             }
+        }
+
+        @Override
+        boolean isResolved() {
+            return !select.isVisible() || select.getValue() != null;
         }
     }
 

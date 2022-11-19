@@ -64,22 +64,40 @@ public class PersonFormView extends Div {
 
     SampleEntity sampleEntity = new SampleEntity();
     SampleEntity conflictEntity = new SampleEntity();
+    Button resolveButton = new Button("Refresh non-conflicting updates.");
     private Div conflictMessage = new Div(
-            new Label("The record has been changed by someone else. Review changes and save again."),
-            new Button("Refresh non-conflicting updates.", click -> {
-                binder.resolveNonconflicting();
-            }));
+            new Label("The record has been changed by someone else. Review changes and save again. "),
+            resolveButton) {
+        @Override
+        public void setVisible(boolean visible) {
+            super.setVisible(visible);
+            resolveButton.setVisible(visible);
+
+        }
+    };
 
     public PersonFormView() {
         addClassName("person-form-view");
 
         add(createTitle());
         add(createFormLayout());
-        add(conflictMessage);
+
+        resolveButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+        resolveButton.addClickListener(click -> {
+            binder.resolveNonconflicting();
+            if (binder.isResolved()) {
+                conflictMessage.setVisible(false);
+            } else {
+                resolveButton.setVisible(false);
+            }
+        });
+
         conflictMessage.setVisible(false);
         conflictMessage.setClassName("text-xs p-s");
         conflictMessage.getStyle().set("background-color", "orange");
         conflictMessage.getStyle().set("color", "white");
+        add(conflictMessage);
+
         add(createButtonLayout());
 
         binder.bindInstanceFields(this);
@@ -398,7 +416,7 @@ public class PersonFormView extends Div {
 
         protected void createConflict() {
             if (Math.random() > 0.2)
-                this.phone = "+44 " + this.phone;
+                this.phone = "+44 " + Math.round(Math.random() * 9999999) + 1000000;
             if (Math.random() > 0.2)
                 this.cardNumber = this.cardNumber + "1234";
             if (Math.random() > 0.2)
