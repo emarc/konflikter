@@ -22,7 +22,7 @@ import com.vaadin.flow.shared.Registration;
 /**
  * Binder with enhancements for conflict resolution.
  */
-public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
+public class CollaborationConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
 
     public static final String CLASSNAME_EDITED = "edited";
     public static final String CLASSNAME_UPDATED = "updated";
@@ -33,11 +33,11 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
     Map<Binding<BEAN, ?>, Object> originalValues;
     Component conflictMessage;
 
-    public ConflictResolutionBinder(Class<BEAN> beanType) {
+    public CollaborationConflictResolutionBinder(Class<BEAN> beanType) {
         this(beanType, false);
     }
 
-    public ConflictResolutionBinder(Class<BEAN> beanType, boolean scanNestedDefinitions) {
+    public CollaborationConflictResolutionBinder(Class<BEAN> beanType, boolean scanNestedDefinitions) {
         super(beanType, scanNestedDefinitions);
     }
 

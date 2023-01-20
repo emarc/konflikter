@@ -66,8 +66,8 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
     private final SamplePersonService samplePersonService;
 
     private Div conflictMessage = new Div(
-        new Label("The record has been changed by someone else. Review changes and save again."), 
-        new Button("Refresh non-conflicting updates.", click -> {
+        new Label("Someone else made changes while you were editing. Please review and use MY EDIT or keep THEIR CHANGE."), 
+        new Button("Apply all their non-conflicting changes.", click -> {
         binder.resolveNonconflicting();
     }));
 

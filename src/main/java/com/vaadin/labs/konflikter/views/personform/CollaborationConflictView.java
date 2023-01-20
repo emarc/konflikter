@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import javax.annotation.Nonnull;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -25,7 +24,7 @@ import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.labs.konflikter.ConflictResolutionBinder;
+import com.vaadin.labs.konflikter.CollaborationConflictResolutionBinder;
 import com.vaadin.labs.konflikter.data.entity.AbstractEntity;
 import com.vaadin.labs.konflikter.views.MainLayout;
 
@@ -33,9 +32,9 @@ import jakarta.persistence.Version;
 import jakarta.validation.constraints.Email;
 
 @PageTitle("Person Form")
-@Route(value = "person-form", layout = MainLayout.class)
+@Route(value = "collaboration-conflict", layout = MainLayout.class)
 @Uses(Icon.class)
-public class PersonFormView extends Div {
+public class CollaborationConflictView extends Div {
 
     private TextField firstName = new TextField("First name");
     private TextField lastName = new TextField("Last name");
@@ -60,7 +59,7 @@ public class PersonFormView extends Div {
     private Button cancel = new Button("Cancel");
     private Button save = new Button("Save");
 
-    private ConflictResolutionBinder<SampleEntity> binder = new ConflictResolutionBinder<>(SampleEntity.class);
+    private CollaborationConflictResolutionBinder<SampleEntity> binder = new CollaborationConflictResolutionBinder<>(SampleEntity.class);
 
     SampleEntity sampleEntity = new SampleEntity();
     SampleEntity conflictEntity = new SampleEntity();
@@ -76,7 +75,7 @@ public class PersonFormView extends Div {
         }
     };
 
-    public PersonFormView() {
+    public CollaborationConflictView() {
         addClassName("person-form-view");
 
         add(createTitle());

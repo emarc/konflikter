@@ -4,8 +4,14 @@ import java.time.LocalDate;
 
 import javax.annotation.Nonnull;
 
+import com.vaadin.collaborationengine.CollaborationAvatarGroup;
+import com.vaadin.collaborationengine.CollaborationEngine;
+import com.vaadin.collaborationengine.CollaborationMap;
+import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.Html;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.avatar.AvatarGroup;
+import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -32,10 +38,10 @@ import com.vaadin.labs.konflikter.views.MainLayout;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Email;
 
-@PageTitle("Person Form")
-@Route(value = "person-form", layout = MainLayout.class)
+@PageTitle("Early Warning Form")
+@Route(value = "early-warning", layout = MainLayout.class)
 @Uses(Icon.class)
-public class PersonFormView extends Div {
+public class EarlyWarningView extends Div {
 
     private TextField firstName = new TextField("First name");
     private TextField lastName = new TextField("Last name");
@@ -62,11 +68,23 @@ public class PersonFormView extends Div {
 
     private ConflictResolutionBinder<SampleEntity> binder = new ConflictResolutionBinder<>(SampleEntity.class);
 
+    // CollaborationKit
+    String userId = System.identityHashCode(UI.getCurrent()) + "";
+    UserInfo localUser = new UserInfo(userId, "User " + userId);
+    CollaborationAvatarGroup avatarGroup = new CollaborationAvatarGroup(
+            localUser, "early-warning");
+    CollaborationMap fieldValues;
+
+    AvatarGroup editors = new AvatarGroup();
+    Label warningMessage = new Label(" made changes while you were editing");
+    HorizontalLayout earlyWarning = new HorizontalLayout(editors, warningMessage);
+
     SampleEntity sampleEntity = new SampleEntity();
     SampleEntity conflictEntity = new SampleEntity();
     Button resolveButton = new Button("Apply all their non-conflicting changes.");
-    private Div conflictMessage = new Div(
-            new Label("Someone else made changes while you were editing. Please review and use MY EDIT or keep THEIR CHANGE. "),
+
+    private Div conflictMessage = new Div(new Label(
+            " made changes while you were editing. Please review and use MY EDIT or keep THEIR CHANGE. "),
             resolveButton) {
         @Override
         public void setVisible(boolean visible) {
@@ -76,11 +94,37 @@ public class PersonFormView extends Div {
         }
     };
 
-    public PersonFormView() {
+    public EarlyWarningView() {
         addClassName("person-form-view");
 
         add(createTitle());
+        add(avatarGroup);
         add(createFormLayout());
+
+        avatarGroup.setOwnAvatarVisible(false);
+        
+
+        CollaborationEngine.getInstance().openTopicConnection(this, "early-warning",
+                localUser, topic -> {
+                    fieldValues = topic
+                            .getNamedMap("whodonnit");
+                            return fieldValues.subscribe(event -> {
+                                if ("user".equals(event.getKey())) {
+                                    UserInfo user = event.getValue(UserInfo.class);
+                                    if (user.equals(localUser)) return;
+
+                                    AvatarGroupItem item = new AvatarGroupItem();
+                                    item.setName(user.getName());
+                                    item.setAbbreviation(user.getAbbreviation());
+                                    item.setImage(user.getImage());
+                                    item.setColorIndex(CollaborationEngine.getInstance().getUserColorIndex(user));
+                                    editors.add(item);
+
+                                    earlyWarning.setVisible(true);
+                                    save.setText("Resolve...");
+                                }
+                            });
+                });
 
         resolveButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
         resolveButton.addClickListener(click -> {
@@ -98,15 +142,23 @@ public class PersonFormView extends Div {
         conflictMessage.getStyle().set("color", "white");
         add(conflictMessage);
 
+        earlyWarning.setVisible(false);
+        editors.setWidth("auto");
+        editors.getStyle().set("display", "inline-block");
+        add(earlyWarning);
+
         add(createButtonLayout());
 
         binder.bindInstanceFields(this);
         binder.setConflictMessage(conflictMessage);
         binder.setBean(sampleEntity);
-        conflictEntity.createConflict();
+        //conflictEntity.createConflict();
 
         cancel.addClickListener(e -> clearForm());
         save.addClickListener(e -> {
+
+            // TODO need to save the new bean? 
+            // Idea: singleton
 
             if (sampleEntity.getVersion() != conflictEntity.getVersion()) {
                 sampleEntity.setVersion(conflictEntity.getVersion());
@@ -115,8 +167,11 @@ public class PersonFormView extends Div {
             } else {
                 Notification.show("Saved!");
                 binder.refreshFields();
-                conflictEntity.createConflict();
+                //conflictEntity.createConflict();
+
+                fieldValues.put("user", localUser);
             }
+            save.setText("Save");
         });
     }
 

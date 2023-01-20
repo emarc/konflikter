@@ -14,6 +14,8 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.labs.konflikter.components.appnav.AppNav;
 import com.vaadin.labs.konflikter.components.appnav.AppNavItem;
 import com.vaadin.labs.konflikter.views.masterdetail.MasterDetailView;
+import com.vaadin.labs.konflikter.views.personform.CollabView;
+import com.vaadin.labs.konflikter.views.personform.EarlyWarningView;
 import com.vaadin.labs.konflikter.views.personform.PersonFormView;
 
 /**
@@ -56,6 +58,8 @@ public class MainLayout extends AppLayout {
 
         nav.addItem(new AppNavItem("Master-Detail", MasterDetailView.class, "la la-columns"));
         nav.addItem(new AppNavItem("Person Form", PersonFormView.class, "la la-user"));
+        nav.addItem(new AppNavItem("Collab Form", CollabView.class, "la la-user"));
+        nav.addItem(new AppNavItem("Early Warning Form", EarlyWarningView.class, "la la-user"));
 
         return nav;
     }

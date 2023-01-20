@@ -4,8 +4,10 @@ import java.time.LocalDate;
 
 import javax.annotation.Nonnull;
 
+import com.vaadin.collaborationengine.CollaborationBinder;
+import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.Html;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -25,17 +27,16 @@ import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.labs.konflikter.ConflictResolutionBinder;
 import com.vaadin.labs.konflikter.data.entity.AbstractEntity;
 import com.vaadin.labs.konflikter.views.MainLayout;
 
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.Email;
 
-@PageTitle("Person Form")
-@Route(value = "person-form", layout = MainLayout.class)
+@PageTitle("Collab Form")
+@Route(value = "collab", layout = MainLayout.class)
 @Uses(Icon.class)
-public class PersonFormView extends Div {
+public class CollabView extends Div {
 
     private TextField firstName = new TextField("First name");
     private TextField lastName = new TextField("Last name");
@@ -60,7 +61,9 @@ public class PersonFormView extends Div {
     private Button cancel = new Button("Cancel");
     private Button save = new Button("Save");
 
-    private ConflictResolutionBinder<SampleEntity> binder = new ConflictResolutionBinder<>(SampleEntity.class);
+    String userId = System.identityHashCode(UI.getCurrent()) + "";
+    UserInfo localUser = new UserInfo(userId, "User " + userId);
+    private CollaborationBinder<SampleEntity> binder = new CollaborationBinder<>(SampleEntity.class, localUser);
 
     SampleEntity sampleEntity = new SampleEntity();
     SampleEntity conflictEntity = new SampleEntity();
@@ -76,7 +79,7 @@ public class PersonFormView extends Div {
         }
     };
 
-    public PersonFormView() {
+    public CollabView() {
         addClassName("person-form-view");
 
         add(createTitle());
@@ -84,12 +87,14 @@ public class PersonFormView extends Div {
 
         resolveButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
         resolveButton.addClickListener(click -> {
+            /*
             binder.resolveNonconflicting();
             if (binder.isResolved()) {
                 conflictMessage.setVisible(false);
             } else {
                 resolveButton.setVisible(false);
             }
+            */
         });
 
         conflictMessage.setVisible(false);
@@ -101,8 +106,9 @@ public class PersonFormView extends Div {
         add(createButtonLayout());
 
         binder.bindInstanceFields(this);
-        binder.setConflictMessage(conflictMessage);
-        binder.setBean(sampleEntity);
+        //binder.setConflictMessage(conflictMessage);
+        //binder.setBean(sampleEntity);
+        binder.setTopic("collab-form", () -> sampleEntity);
         conflictEntity.createConflict();
 
         cancel.addClickListener(e -> clearForm());
@@ -110,7 +116,7 @@ public class PersonFormView extends Div {
 
             if (sampleEntity.getVersion() != conflictEntity.getVersion()) {
                 sampleEntity.setVersion(conflictEntity.getVersion());
-                binder.merge(conflictEntity);
+                //binder.merge(conflictEntity);
 
             } else {
                 Notification.show("Saved!");
