@@ -1,6 +1,10 @@
 package com.vaadin.labs.konflikter.views.personform;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -13,15 +17,19 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.labs.konflikter.ConflictResolutionBinder;
 import com.vaadin.labs.konflikter.data.entity.SampleEntity;
+import com.vaadin.labs.konflikter.data.service.SampleEntityService;
 import com.vaadin.labs.konflikter.views.MainLayout;
 
 @PageTitle("Person Form")
@@ -54,8 +62,8 @@ public class PersonFormView extends Div {
 
     private ConflictResolutionBinder<SampleEntity> binder = new ConflictResolutionBinder<>(SampleEntity.class);
 
-    SampleEntity sampleEntity = new SampleEntity();
-    SampleEntity conflictEntity = new SampleEntity();
+    SampleEntity sampleEntity;
+
     Button resolveButton = new Button("Apply all their non-conflicting changes.");
     private Div conflictMessage = new Div(
             new Label("Someone else made changes while you were editing. Please review and use MY EDIT or keep THEIR CHANGE. "),
@@ -68,8 +76,34 @@ public class PersonFormView extends Div {
         }
     };
 
-    public PersonFormView() {
+    SampleEntityService sampleEntityService;
+
+    @Autowired
+    public PersonFormView(SampleEntityService sampleEntityService) {
         addClassName("person-form-view");
+
+        this.sampleEntityService = sampleEntityService;
+        sampleEntityService.get(2l).ifPresentOrElse(entity -> {
+            sampleEntity = entity;
+        }, () -> {
+            Notification notification = new Notification("Something is wrong with the sample data!");
+            notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+            notification.open();
+        });
+
+        Button generateConfict = new Button("Generate conflict", click -> {
+            sampleEntityService.get(2l).ifPresentOrElse(entity -> {
+                entity.createConflict();
+                sampleEntityService.update(entity);
+                Notification.show("Cool. Do some changes of your own, then save.");
+            }, () -> {
+                Notification notification = new Notification("Something is wrong with the sample data!");
+                notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+                notification.open();
+            });
+        });
+        generateConfict.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+        add(generateConfict);
 
         add(createTitle());
         add(createFormLayout());
@@ -95,20 +129,27 @@ public class PersonFormView extends Div {
         binder.bindInstanceFields(this);
         binder.setConflictMessage(conflictMessage);
         binder.setBean(sampleEntity);
-        conflictEntity.createConflict();
 
         cancel.addClickListener(e -> clearForm());
         save.addClickListener(e -> {
-
-            if (sampleEntity.getVersion() != conflictEntity.getVersion()) {
-                sampleEntity.setVersion(conflictEntity.getVersion());
-                binder.merge(conflictEntity);
-
-            } else {
-                Notification.show("Saved!");
-                binder.refreshFields();
-                conflictEntity.createConflict();
+            if (!binder.isResolved()) {
+                Notification.show("Please resolve all changed fields", 3000, Position.MIDDLE);
+                return;
             }
+            try {
+                binder.writeBean(this.sampleEntity);
+                sampleEntityService.update(this.sampleEntity);
+                Notification.show("Saved!");
+                UI.getCurrent().navigate("/");
+
+            } catch (ValidationException validationException) {
+                Notification.show("An exception happened while trying to store the samplePerson details.");
+
+            } catch (ObjectOptimisticLockingFailureException lockingException) {
+                this.sampleEntity = sampleEntityService.get((Long) lockingException.getIdentifier()).get();
+                binder.merge(this.sampleEntity);
+            }
+
         });
     }
 

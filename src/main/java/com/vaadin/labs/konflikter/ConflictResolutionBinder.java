@@ -296,7 +296,7 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
                         break;
                     case ORIGINAL:
                         field.setValue(origValue);
-                        applyFieldClass("");
+                        applyFieldClass(null);
                         break;
                 }
             });
@@ -367,7 +367,7 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
                 hs.removeClassName(CLASSNAME_CONFLICT);
                 hs.removeClassName(CLASSNAME_MATCH);
                 hs.removeClassName(CLASSNAME_UPDATED);
-                hs.addClassName(className);
+                if (className != null) hs.addClassName(className);
             }
         }
 

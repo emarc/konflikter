@@ -1,6 +1,5 @@
 package com.vaadin.labs.konflikter.views;
 
-
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
@@ -13,7 +12,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.labs.konflikter.components.appnav.AppNav;
 import com.vaadin.labs.konflikter.components.appnav.AppNavItem;
-import com.vaadin.labs.konflikter.views.masterdetail.MasterDetailView;
+import com.vaadin.labs.konflikter.views.about.AboutView;
 import com.vaadin.labs.konflikter.views.personform.CollabView;
 import com.vaadin.labs.konflikter.views.personform.EarlyWarningView;
 import com.vaadin.labs.konflikter.views.personform.PersonFormView;
@@ -56,17 +55,17 @@ public class MainLayout extends AppLayout {
         // For documentation, visit https://github.com/vaadin/vcf-nav#readme
         AppNav nav = new AppNav();
 
-        nav.addItem(new AppNavItem("Master-Detail", MasterDetailView.class, "la la-columns"));
-        nav.addItem(new AppNavItem("Person Form", PersonFormView.class, "la la-user"));
-        nav.addItem(new AppNavItem("Collab Form", CollabView.class, "la la-user"));
-        nav.addItem(new AppNavItem("Early Warning Form", EarlyWarningView.class, "la la-user"));
-
+        nav.addItem(new AppNavItem("About", AboutView.class, "la la-info-circle"));
+        nav.addItem(new AppNavItem("Conflict Resolution", PersonFormView.class, "la la-handshake"));
+        nav.addItem(new AppNavItem("Early Warning", EarlyWarningView.class, "la la-hands-helping"));
+        nav.addItem(new AppNavItem("Live Resolution", CollabView.class, "la la-users"));
         return nav;
     }
 
     private Footer createFooter() {
         Footer layout = new Footer();
-        layout.add(new Html("<div><b>Edit some things and save</b><br/>Somebody seems to be editing exactly the same items you are, but luckily this application has conflict resolution.<hr/>Master-Detail uses actual JPA optimistic locking, while Person Form just juggles two entities.</div>"));
+        layout.add(new Html(
+                "<div><b><i>Generate confict</i> or save some changes in a separate browser window.</b><br/>Then edit some stuff before you save the form.</div>"));
         return layout;
     }
 

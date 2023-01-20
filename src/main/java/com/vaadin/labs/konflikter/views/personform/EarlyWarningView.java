@@ -1,8 +1,8 @@
 package com.vaadin.labs.konflikter.views.personform;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -14,7 +14,9 @@ import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.AvatarGroup;
+import com.vaadin.flow.component.avatar.AvatarGroupVariant;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
+import com.vaadin.flow.component.avatar.AvatarVariant;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -27,6 +29,7 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -80,12 +83,12 @@ public class EarlyWarningView extends Div {
     CollaborationMap fieldValues;
 
     AvatarGroup editors = new AvatarGroup();
-    Label warningMessage = new Label(" made changes while you were editing");
+    Label warningMessage = new Label("made some changes you need to resolve before saving.");
     HorizontalLayout earlyWarning = new HorizontalLayout(editors, warningMessage);
 
     SampleEntity sampleEntity = new SampleEntity();
 
-    Button resolveButton = new Button("Apply all their non-conflicting changes.");
+    Button resolveButton = new Button("Apply all their non-conflicting changes");
 
     private Div conflictMessage = new Div(new Label(
             "Please review changes and use MY EDIT or keep THEIR CHANGE. "),
@@ -157,8 +160,10 @@ public class EarlyWarningView extends Div {
                             item.setAbbreviation(user.getAbbreviation());
                             item.setImage(user.getImage());
                             item.setColorIndex(CollaborationEngine.getInstance().getUserColorIndex(user));
-                            editors.add(item);
-                            // TODO reverse this list for easier reading
+                            // Let's make sure the last one is "on top"; TODO feature request for CollabKit
+                            List<AvatarGroupItem> oldItems = editors.getItems();
+                            editors.setItems(item);
+                            editors.add(oldItems.toArray(new AvatarGroupItem[0]));
 
                             earlyWarning.setVisible(true);
                             save.setText("Resolve...");
@@ -179,22 +184,10 @@ public class EarlyWarningView extends Div {
             }
         });
 
-        earlyWarning.setVisible(false);
-        earlyWarning.setClassName("text-xs p-s");
-        earlyWarning.getStyle().set("background-color", "orange");
-        earlyWarning.getStyle().set("color", "white");
-        earlyWarning.setAlignItems(Alignment.CENTER);
-        editors.setWidth("auto");
-        editors.getStyle().set("display", "inline-block");
-        add(earlyWarning);
-
         conflictMessage.setVisible(false);
-        conflictMessage.setClassName("text-xs p-s");
-        conflictMessage.getStyle().set("border", "2px solid orange");
-        conflictMessage.getStyle().set("display", "flex");
-        conflictMessage.getStyle().set("flex-direction", "row");
-        conflictMessage.getStyle().set("justify-content", "space-between");
-        conflictMessage.getStyle().set("align-items", "center");
+        conflictMessage.setClassName("flex flex-row items-center justify-between p-xs text-xs font-bold");
+        conflictMessage.getStyle().set("border", "1px solid orange");
+        conflictMessage.getStyle().set("color", "orange");
         add(conflictMessage);
 
         add(createButtonLayout());
@@ -207,6 +200,10 @@ public class EarlyWarningView extends Div {
             UI.getCurrent().navigate("/");
         });
         save.addClickListener(e -> {
+            if (!binder.isResolved()) {
+                Notification.show("Please resolve all changed fields", 3000, Position.MIDDLE);
+                return;
+            }
             try {
                 binder.writeBean(this.sampleEntity);
                 sampleEntityService.update(this.sampleEntity);
@@ -221,15 +218,12 @@ public class EarlyWarningView extends Div {
             } catch (ObjectOptimisticLockingFailureException lockingException) {
                 this.sampleEntity = sampleEntityService.get((Long) lockingException.getIdentifier()).get();
                 binder.merge(this.sampleEntity);
+                earlyWarning.setVisible(false);
             }
 
             save.setText("Save");
             save.getStyle().remove("background-color");
         });
-    }
-
-    private void clearForm() {
-        binder.refreshFields();
     }
 
     private Component createTitle() {
@@ -264,10 +258,22 @@ public class EarlyWarningView extends Div {
 
     private Component createButtonLayout() {
         HorizontalLayout buttonLayout = new HorizontalLayout();
+        buttonLayout.setAlignItems(Alignment.CENTER);
         buttonLayout.addClassName("button-layout");
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         buttonLayout.add(save);
+
+        earlyWarning.setVisible(false);
+        earlyWarning.setClassName("text-xs font-bold p-xs");
+        earlyWarning.getStyle().set("color", "orange");
+        earlyWarning.setAlignItems(Alignment.CENTER);
+        editors.setWidth("auto");
+        editors.getStyle().set("display", "inline-block");
+        editors.addThemeVariants(AvatarGroupVariant.LUMO_SMALL);
+        buttonLayout.add(earlyWarning);
+
         buttonLayout.add(cancel);
+
         return buttonLayout;
     }
 
