@@ -2,7 +2,6 @@ package com.vaadin.labs.konflikter.views.masterdetail;
 
 import java.time.LocalDate;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -66,10 +65,11 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
     private final SamplePersonService samplePersonService;
 
     private Div conflictMessage = new Div(
-        new Label("Someone else made changes while you were editing. Please review and use MY EDIT or keep THEIR CHANGE."), 
-        new Button("Apply all their non-conflicting changes.", click -> {
-        binder.resolveNonconflicting();
-    }));
+            new Label(
+                    "Someone else made changes while you were editing. Please review and use MY EDIT or keep THEIR CHANGE."),
+            new Button("Apply all their non-conflicting changes.", click -> {
+                binder.resolveNonconflicting();
+            }));
 
     @Autowired
     public MasterDetailView(SamplePersonService samplePersonService) {
@@ -140,19 +140,18 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
                 UI.getCurrent().navigate(MasterDetailView.class);
             } catch (ValidationException validationException) {
                 Notification.show("An exception happened while trying to store the samplePerson details.");
-            } 
-            catch (ObjectOptimisticLockingFailureException lockingException) {
-                this.samplePerson = samplePersonService.get((UUID) lockingException.getIdentifier()).get();
+            } catch (ObjectOptimisticLockingFailureException lockingException) {
+                this.samplePerson = samplePersonService.get((Long) lockingException.getIdentifier()).get();
                 binder.merge(this.samplePerson);
             }
-            
+
         });
 
     }
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        Optional<UUID> samplePersonId = event.getRouteParameters().get(SAMPLEPERSON_ID).map(UUID::fromString);
+        Optional<Long> samplePersonId = event.getRouteParameters().get(SAMPLEPERSON_ID).map(Long::parseLong);
         if (samplePersonId.isPresent()) {
             Optional<SamplePerson> samplePersonFromBackend = samplePersonService.get(samplePersonId.get());
             if (samplePersonFromBackend.isPresent()) {
@@ -172,7 +171,8 @@ public class MasterDetailView extends Div implements BeforeEnterObserver {
 
     private void createConflict(SamplePerson samplePerson) {
         LocalDate bd = samplePerson.getDateOfBirth();
-        if (bd == null) bd = LocalDate.of(2000, 11, 15);
+        if (bd == null)
+            bd = LocalDate.of(2000, 11, 15);
         samplePerson.setDateOfBirth(bd.plusDays(1));
         samplePerson.setEmail(samplePerson.getEmail() + ".com");
         samplePersonService.update(samplePerson);

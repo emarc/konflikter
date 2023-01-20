@@ -3,7 +3,6 @@ package com.vaadin.labs.konflikter.data.entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
-import java.util.UUID;
 
 @MappedSuperclass
 public abstract class AbstractEntity {
@@ -11,13 +10,13 @@ public abstract class AbstractEntity {
     @Id
     @GeneratedValue
 
-    private UUID id;
+    private Long id;
 
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

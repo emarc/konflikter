@@ -1,27 +1,30 @@
 package com.vaadin.labs.konflikter.data.service;
 
-import com.vaadin.labs.konflikter.data.entity.SamplePerson;
 import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-@Service
-public class SamplePersonService {
+import com.vaadin.labs.konflikter.data.entity.SampleEntity;
 
-    private final SamplePersonRepository repository;
+@Service
+public class SampleEntityService {
+
+    private final SampleEntityRepository repository;
 
     @Autowired
-    public SamplePersonService(SamplePersonRepository repository) {
+    public SampleEntityService(SampleEntityRepository repository) {
         this.repository = repository;
     }
 
-    public Optional<SamplePerson> get(Long id) {
+    public Optional<SampleEntity> get(Long id) {
         return repository.findById(id);
+
     }
 
-    public SamplePerson update(SamplePerson entity) {
+    public SampleEntity update(SampleEntity entity) {
         return repository.save(entity);
     }
 
@@ -29,7 +32,7 @@ public class SamplePersonService {
         repository.deleteById(id);
     }
 
-    public Page<SamplePerson> list(Pageable pageable) {
+    public Page<SampleEntity> list(Pageable pageable) {
         return repository.findAll(pageable);
     }
 

@@ -1,8 +1,11 @@
 package com.vaadin.labs.konflikter.views.personform;
 
-import java.time.LocalDate;
+import java.time.Duration;
+import java.util.Random;
+import java.util.UUID;
 
-import javax.annotation.Nonnull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import com.vaadin.collaborationengine.CollaborationAvatarGroup;
 import com.vaadin.collaborationengine.CollaborationEngine;
@@ -24,19 +27,20 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.labs.konflikter.ConflictResolutionBinder;
-import com.vaadin.labs.konflikter.data.entity.AbstractEntity;
+import com.vaadin.labs.konflikter.data.entity.SampleEntity;
+import com.vaadin.labs.konflikter.data.service.SampleEntityService;
 import com.vaadin.labs.konflikter.views.MainLayout;
-
-import jakarta.persistence.Version;
-import jakarta.validation.constraints.Email;
 
 @PageTitle("Early Warning Form")
 @Route(value = "early-warning", layout = MainLayout.class)
@@ -80,11 +84,11 @@ public class EarlyWarningView extends Div {
     HorizontalLayout earlyWarning = new HorizontalLayout(editors, warningMessage);
 
     SampleEntity sampleEntity = new SampleEntity();
-    SampleEntity conflictEntity = new SampleEntity();
+
     Button resolveButton = new Button("Apply all their non-conflicting changes.");
 
     private Div conflictMessage = new Div(new Label(
-            " made changes while you were editing. Please review and use MY EDIT or keep THEIR CHANGE. "),
+            "Please review changes and use MY EDIT or keep THEIR CHANGE. "),
             resolveButton) {
         @Override
         public void setVisible(boolean visible) {
@@ -94,36 +98,73 @@ public class EarlyWarningView extends Div {
         }
     };
 
-    public EarlyWarningView() {
+    SampleEntityService sampleEntityService;
+
+    @Autowired
+    public EarlyWarningView(SampleEntityService sampleEntityService) {
         addClassName("person-form-view");
 
+        this.sampleEntityService = sampleEntityService;
+        sampleEntityService.get(1l).ifPresentOrElse(entity -> {
+            sampleEntity = entity;
+        }, () -> {
+            Notification notification = new Notification("Something is wrong with the sample data!");
+            notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+            notification.open();
+        });
+
+        Button generateConfict = new Button("Generate conflict", click -> {
+            sampleEntityService.get(1l).ifPresentOrElse(entity -> {
+                entity.createConflict();
+                sampleEntityService.update(entity);
+            }, () -> {
+                Notification notification = new Notification("Something is wrong with the sample data!");
+                notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+                notification.open();
+            });
+
+            int r = new Random().nextInt(26);
+            String userId = "Bot" + r;
+            char randomChar = (char)(r + 'A');
+            UserInfo botUser = new UserInfo(userId, "Bot " + randomChar);
+            fieldValues.put("user", botUser);
+            fieldValues.put("user", null);
+        });
+        generateConfict.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+        add(generateConfict);
+
         add(createTitle());
+
         add(avatarGroup);
+
         add(createFormLayout());
 
         avatarGroup.setOwnAvatarVisible(false);
-        
 
         CollaborationEngine.getInstance().openTopicConnection(this, "early-warning",
                 localUser, topic -> {
                     fieldValues = topic
                             .getNamedMap("whodonnit");
-                            return fieldValues.subscribe(event -> {
-                                if ("user".equals(event.getKey())) {
-                                    UserInfo user = event.getValue(UserInfo.class);
-                                    if (user.equals(localUser)) return;
+                    fieldValues.setExpirationTimeout(Duration.ZERO); // Zero timeout here?
+                    return fieldValues.subscribe(event -> {
+                        if ("user".equals(event.getKey())) {
+                            UserInfo user = event.getValue(UserInfo.class);
+                            if (user == null || user.equals(localUser))
+                                return;
 
-                                    AvatarGroupItem item = new AvatarGroupItem();
-                                    item.setName(user.getName());
-                                    item.setAbbreviation(user.getAbbreviation());
-                                    item.setImage(user.getImage());
-                                    item.setColorIndex(CollaborationEngine.getInstance().getUserColorIndex(user));
-                                    editors.add(item);
+                            AvatarGroupItem item = new AvatarGroupItem();
+                            item.setName(user.getName());
+                            item.setAbbreviation(user.getAbbreviation());
+                            item.setImage(user.getImage());
+                            item.setColorIndex(CollaborationEngine.getInstance().getUserColorIndex(user));
+                            editors.add(item);
+                            // TODO reverse this list for easier reading
 
-                                    earlyWarning.setVisible(true);
-                                    save.setText("Resolve...");
-                                }
-                            });
+                            earlyWarning.setVisible(true);
+                            save.setText("Resolve...");
+                            save.getStyle().set("background-color", "orange");
+                        }
+                    });
                 });
 
         resolveButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
@@ -131,47 +172,59 @@ public class EarlyWarningView extends Div {
             binder.resolveNonconflicting();
             if (binder.isResolved()) {
                 conflictMessage.setVisible(false);
+                editors.getItems().forEach(editors::remove);
+                earlyWarning.setVisible(false);
             } else {
                 resolveButton.setVisible(false);
             }
         });
 
-        conflictMessage.setVisible(false);
-        conflictMessage.setClassName("text-xs p-s");
-        conflictMessage.getStyle().set("background-color", "orange");
-        conflictMessage.getStyle().set("color", "white");
-        add(conflictMessage);
-
         earlyWarning.setVisible(false);
+        earlyWarning.setClassName("text-xs p-s");
+        earlyWarning.getStyle().set("background-color", "orange");
+        earlyWarning.getStyle().set("color", "white");
+        earlyWarning.setAlignItems(Alignment.CENTER);
         editors.setWidth("auto");
         editors.getStyle().set("display", "inline-block");
         add(earlyWarning);
+
+        conflictMessage.setVisible(false);
+        conflictMessage.setClassName("text-xs p-s");
+        conflictMessage.getStyle().set("border", "2px solid orange");
+        conflictMessage.getStyle().set("display", "flex");
+        conflictMessage.getStyle().set("flex-direction", "row");
+        conflictMessage.getStyle().set("justify-content", "space-between");
+        conflictMessage.getStyle().set("align-items", "center");
+        add(conflictMessage);
 
         add(createButtonLayout());
 
         binder.bindInstanceFields(this);
         binder.setConflictMessage(conflictMessage);
         binder.setBean(sampleEntity);
-        //conflictEntity.createConflict();
 
-        cancel.addClickListener(e -> clearForm());
+        cancel.addClickListener(e -> {
+            UI.getCurrent().navigate("/");
+        });
         save.addClickListener(e -> {
-
-            // TODO need to save the new bean? 
-            // Idea: singleton
-
-            if (sampleEntity.getVersion() != conflictEntity.getVersion()) {
-                sampleEntity.setVersion(conflictEntity.getVersion());
-                binder.merge(conflictEntity);
-
-            } else {
+            try {
+                binder.writeBean(this.sampleEntity);
+                sampleEntityService.update(this.sampleEntity);
                 Notification.show("Saved!");
-                binder.refreshFields();
-                //conflictEntity.createConflict();
-
                 fieldValues.put("user", localUser);
+                fieldValues.put("user", null);
+                UI.getCurrent().navigate("/");
+
+            } catch (ValidationException validationException) {
+                Notification.show("An exception happened while trying to store the samplePerson details.");
+
+            } catch (ObjectOptimisticLockingFailureException lockingException) {
+                this.sampleEntity = sampleEntityService.get((Long) lockingException.getIdentifier()).get();
+                binder.merge(this.sampleEntity);
             }
+
             save.setText("Save");
+            save.getStyle().remove("background-color");
         });
     }
 
@@ -281,212 +334,6 @@ public class EarlyWarningView extends Div {
         @Override
         protected void setPresentationValue(String newPresentationValue) {
             // Unused as month and year fields part are of the outer class
-        }
-
-    }
-
-    public static class SampleEntity extends AbstractEntity {
-        @Version
-        private Long version = 0l;
-
-        public Long getVersion() {
-            return version;
-        }
-
-        public void setVersion(Long version) {
-            this.version = version;
-        }
-
-        @Nonnull
-        private String firstName = "Jordan";
-        @Nonnull
-        private String lastName = "Doe";
-        @Email
-        @Nonnull
-        private String email = "jd@email.com";
-        @Nonnull
-        private String phone = "+358 5551234567890";
-        private LocalDate dateOfBirth = LocalDate.of(2000, 11, 15);
-        @Nonnull
-        private String occupation = "Vaadiner";
-        private boolean important = true;
-
-        public String getFirstName() {
-            return firstName;
-        }
-
-        public void setFirstName(String firstName) {
-            this.firstName = firstName;
-        }
-
-        public String getLastName() {
-            return lastName;
-        }
-
-        public void setLastName(String lastName) {
-            this.lastName = lastName;
-        }
-
-        public String getEmail() {
-            return email;
-        }
-
-        public void setEmail(String email) {
-            this.email = email;
-        }
-
-        public String getPhone() {
-            return phone;
-        }
-
-        public void setPhone(String phone) {
-            this.phone = phone;
-        }
-
-        public LocalDate getDateOfBirth() {
-            return dateOfBirth;
-        }
-
-        public void setDateOfBirth(LocalDate dateOfBirth) {
-            this.dateOfBirth = dateOfBirth;
-        }
-
-        public String getOccupation() {
-            return occupation;
-        }
-
-        public void setOccupation(String occupation) {
-            this.occupation = occupation;
-        }
-
-        public boolean isImportant() {
-            return important;
-        }
-
-        public void setImportant(boolean important) {
-            this.important = important;
-        }
-
-        @Nonnull
-        private String street = "Ruukinkatu 2-4";
-        @Nonnull
-        private String postalCode = "20520";
-        @Nonnull
-        private String city = "Åbo";
-        @Nonnull
-        private String state = "-";
-        @Nonnull
-        private String country = "Finland";
-
-        public String getStreet() {
-            return street;
-        }
-
-        public void setStreet(String street) {
-            this.street = street;
-        }
-
-        public String getPostalCode() {
-            return postalCode;
-        }
-
-        public void setPostalCode(String postalCode) {
-            this.postalCode = postalCode;
-        }
-
-        public String getCity() {
-            return city;
-        }
-
-        public void setCity(String city) {
-            this.city = city;
-        }
-
-        public String getState() {
-            return state;
-        }
-
-        public void setState(String state) {
-            this.state = state;
-        }
-
-        public String getCountry() {
-            return country;
-        }
-
-        public void setCountry(String country) {
-            this.country = country;
-        }
-
-        @Nonnull
-        private String cardNumber = "1234567890123456";
-        @Nonnull
-        private String cardholderName = lastName.toUpperCase() + " " + firstName.toUpperCase();
-        @Nonnull
-        private Integer month = 11;
-        @Nonnull
-        private Integer year = 25;
-        @Nonnull
-        private String csc = "1234";
-
-        public String getCardNumber() {
-            return cardNumber;
-        }
-
-        public void setCardNumber(String cardNumber) {
-            this.cardNumber = cardNumber;
-        }
-
-        public String getCardholderName() {
-            return cardholderName;
-        }
-
-        public void setCardholderName(String cardholderName) {
-            this.cardholderName = cardholderName;
-        }
-
-        public Integer getMonth() {
-            return month;
-        }
-
-        public void setMonth(Integer month) {
-            this.month = month;
-        }
-
-        public Integer getYear() {
-            return year;
-        }
-
-        public void setYear(Integer year) {
-            this.year = year;
-        }
-
-        public String getCsc() {
-            return csc;
-        }
-
-        public void setCsc(String csc) {
-            this.csc = csc;
-        }
-
-        protected void createConflict() {
-            if (Math.random() > 0.2)
-                this.phone = "+44 " + Math.round(Math.random() * 9999999) + 1000000;
-            if (Math.random() > 0.2)
-                this.cardNumber = this.cardNumber + "1234";
-            if (Math.random() > 0.2)
-                this.city = "Turku";
-            if (Math.random() > 0.2)
-                this.csc = "" + Math.round(Math.random() * 1000 + 1000);
-            if (this.dateOfBirth != null && Math.random() > 0.2)
-                this.dateOfBirth = this.dateOfBirth.plusDays(1);
-            if (Math.random() > 0.2)
-                this.email += ".com";
-            if (Math.random() > 0.2)
-                this.postalCode = "" + Math.round(Math.random() * 1000 + 1000);
-            if (Math.random() > 0.2)
-                this.year = Double.valueOf(Math.random() * 5 + 20).intValue();
-            this.version++;
         }
 
     }
