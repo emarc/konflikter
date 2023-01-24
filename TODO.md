@@ -1,5 +1,5 @@
 # TODO
 
- - Live change
- - Better intro page w/ video
- - 
+ - Video
+ - Constants! E.g topic tied to entity id.
+ 

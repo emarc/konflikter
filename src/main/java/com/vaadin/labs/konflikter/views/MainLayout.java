@@ -15,6 +15,7 @@ import com.vaadin.labs.konflikter.components.appnav.AppNavItem;
 import com.vaadin.labs.konflikter.views.about.AboutView;
 import com.vaadin.labs.konflikter.views.personform.CollabView;
 import com.vaadin.labs.konflikter.views.personform.EarlyWarningView;
+import com.vaadin.labs.konflikter.views.personform.LiveConflictView;
 import com.vaadin.labs.konflikter.views.personform.PersonFormView;
 
 /**
@@ -58,14 +59,14 @@ public class MainLayout extends AppLayout {
         nav.addItem(new AppNavItem("About", AboutView.class, "la la-info-circle"));
         nav.addItem(new AppNavItem("Conflict Resolution", PersonFormView.class, "la la-handshake"));
         nav.addItem(new AppNavItem("Early Warning", EarlyWarningView.class, "la la-hands-helping"));
-        nav.addItem(new AppNavItem("Live Resolution", CollabView.class, "la la-users"));
+        nav.addItem(new AppNavItem("Live Conflict", LiveConflictView.class, "la la-users"));
         return nav;
     }
 
     private Footer createFooter() {
         Footer layout = new Footer();
         layout.add(new Html(
-                "<div><b><i>Generate confict</i> or save some changes in a separate browser window.</b><br/>Then edit some stuff before you save the form.</div>"));
+                "<div><b><i>Generate confict</i> OR save some changes in a separate browser window.</b><br/>Then edit some stuff before you save the form.</div>"));
         return layout;
     }
 
