@@ -66,7 +66,7 @@ public class MainLayout extends AppLayout {
     private Footer createFooter() {
         Footer layout = new Footer();
         layout.add(new Html(
-                "<div><b><i>Generate confict</i> OR save some changes in a separate browser window.</b><br/>Then edit some stuff before you save the form.</div>"));
+                "<div>Edit some stuff, but <b>before you save</b> click <i>Generate confict</i> OR save some changes in a separate browser window.</div>"));
         return layout;
     }
 
