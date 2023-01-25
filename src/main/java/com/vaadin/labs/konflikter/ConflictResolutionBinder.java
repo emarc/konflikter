@@ -332,16 +332,16 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
                 // Edited
                 if (isMatch()) {
                     // edit = change => no conflict, but odd to hide the edit?
-                    select.setPlaceholder("Changed");
+                    select.setPlaceholder("Changed...");
                     applyFieldClass(CLASSNAME_MATCH);
                 } else if (!isUpdated()) {
                     // edited, not changed in db
-                    select.setPlaceholder("Edited");
+                    select.setPlaceholder("Edited...");
                     applyFieldClass(CLASSNAME_EDITED);
                     select.setValue(Resolution.KEEP);
                 } else {
                     // conflict, all differs
-                    select.setPlaceholder("Conflict");
+                    select.setPlaceholder("Conflict...");
                     applyFieldClass(CLASSNAME_CONFLICT);
                 }
 
@@ -352,7 +352,7 @@ public class ConflictResolutionBinder<BEAN> extends BeanValidationBinder<BEAN> {
                     select.setVisible(false);
                 } else {
                     // not edited, but changed
-                    select.setPlaceholder("Changed");
+                    select.setPlaceholder("Changed...");
                     applyFieldClass(CLASSNAME_UPDATED);
                 }
 

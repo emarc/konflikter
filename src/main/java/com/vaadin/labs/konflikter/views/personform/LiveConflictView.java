@@ -88,8 +88,8 @@ public class LiveConflictView extends Div {
     Button resolveButton = new Button("Apply all their non-conflicting changes");
 
     Label conflictText = new Label(
-            " made changes. Please review and use MY EDIT or keep THEIR CHANGE. ");
-    private Div conflictMessage = new Div(editors, conflictText,
+            "made changes. Please review and use MY EDIT or keep THEIR CHANGE. ");
+    private HorizontalLayout conflictMessage = new HorizontalLayout(editors, conflictText,
             resolveButton) {
         @Override
         public void setVisible(boolean visible) {
@@ -191,12 +191,12 @@ public class LiveConflictView extends Div {
         editors.getStyle().set("display", "inline-block");
         editors.addThemeVariants(AvatarGroupVariant.LUMO_SMALL);
 
-        conflictText.addClassName("felx-grow");
+        conflictText.addClassName("flex-grow");
 
         conflictMessage.setVisible(false);
         conflictMessage.setClassName("flex flex-row items-center justify-between p-xs text-xs font-bold");
-        conflictMessage.getStyle().set("border", "1px solid orange");
-        conflictMessage.getStyle().set("color", "orange");
+        conflictMessage.getStyle().set("border", "1px solid var(--lumo-primary-color)");
+        conflictMessage.getStyle().set("color", "var(--lumo-primary-color)");
         add(conflictMessage);
 
         add(createButtonLayout());

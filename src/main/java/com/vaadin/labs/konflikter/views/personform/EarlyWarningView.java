@@ -167,7 +167,6 @@ public class EarlyWarningView extends Div {
 
                             earlyWarning.setVisible(true);
                             save.setText("Resolve...");
-                            save.getStyle().set("background-color", "orange");
                         }
                     });
                 });
@@ -186,8 +185,8 @@ public class EarlyWarningView extends Div {
 
         conflictMessage.setVisible(false);
         conflictMessage.setClassName("flex flex-row items-center justify-between p-xs text-xs font-bold");
-        conflictMessage.getStyle().set("border", "1px solid orange");
-        conflictMessage.getStyle().set("color", "orange");
+        conflictMessage.getStyle().set("border", "1px solid var(--lumo-primary-color)");
+        conflictMessage.getStyle().set("color", "var(--lumo-primary-color)");
         add(conflictMessage);
 
         add(createButtonLayout());
@@ -222,7 +221,6 @@ public class EarlyWarningView extends Div {
             }
 
             save.setText("Save");
-            save.getStyle().remove("background-color");
         });
     }
 
@@ -263,16 +261,16 @@ public class EarlyWarningView extends Div {
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         buttonLayout.add(save);
 
+        buttonLayout.add(cancel);
+
         earlyWarning.setVisible(false);
         earlyWarning.setClassName("text-xs font-bold p-xs");
-        earlyWarning.getStyle().set("color", "orange");
+        earlyWarning.getStyle().set("color", "var(--lumo-primary-color)");
         earlyWarning.setAlignItems(Alignment.CENTER);
         editors.setWidth("auto");
         editors.getStyle().set("display", "inline-block");
         editors.addThemeVariants(AvatarGroupVariant.LUMO_SMALL);
         buttonLayout.add(earlyWarning);
-
-        buttonLayout.add(cancel);
 
         return buttonLayout;
     }
