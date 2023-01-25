@@ -21,6 +21,7 @@ public class AboutView extends VerticalLayout {
             The first example invokes conflict resolution only when a optimistic locking exception occurs during save, 
             while the other two use <b>Collaboration Kit</b> to help the anticipate and resolve conflicts more “eagerly”. 
             </p>
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/ReLoWho4l6Y" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
             <p>
             <b>Compared to the live collaborative form</b> editing functionality provided by default in the Collaboration Kit, 
             these approaches may be more appropriate for situations where <b>accountability</b> and validity is important. 

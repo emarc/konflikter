@@ -14,9 +14,8 @@ import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.AvatarGroup;
-import com.vaadin.flow.component.avatar.AvatarGroupVariant;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
-import com.vaadin.flow.component.avatar.AvatarVariant;
+import com.vaadin.flow.component.avatar.AvatarGroupVariant;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -49,6 +48,9 @@ import com.vaadin.labs.konflikter.views.MainLayout;
 @Route(value = "early-warning", layout = MainLayout.class)
 @Uses(Icon.class)
 public class EarlyWarningView extends Div {
+    private static final Long ENTITY_ID = 2l;
+    private static final String TOPIC_NAME = SampleEntity.class.getSimpleName() + ENTITY_ID;
+    private static final String MAP_NAME = "whodonnit";
 
     private TextField firstName = new TextField("First name");
     private TextField lastName = new TextField("Last name");
@@ -79,7 +81,7 @@ public class EarlyWarningView extends Div {
     String userId = System.identityHashCode(UI.getCurrent()) + "";
     UserInfo localUser = new UserInfo(userId, "User " + userId);
     CollaborationAvatarGroup avatarGroup = new CollaborationAvatarGroup(
-            localUser, "early-warning");
+            localUser, TOPIC_NAME);
     CollaborationMap fieldValues;
 
     AvatarGroup editors = new AvatarGroup();
@@ -108,7 +110,7 @@ public class EarlyWarningView extends Div {
         addClassName("person-form-view");
 
         this.sampleEntityService = sampleEntityService;
-        sampleEntityService.get(1l).ifPresentOrElse(entity -> {
+        sampleEntityService.get(ENTITY_ID).ifPresentOrElse(entity -> {
             sampleEntity = entity;
         }, () -> {
             Notification notification = new Notification("Something is wrong with the sample data!");
@@ -117,23 +119,25 @@ public class EarlyWarningView extends Div {
         });
 
         Button generateConfict = new Button("Generate conflict", click -> {
-            sampleEntityService.get(1l).ifPresentOrElse(entity -> {
+            sampleEntityService.get(ENTITY_ID).ifPresentOrElse(entity -> {
                 entity.createConflict();
                 sampleEntityService.update(entity);
+
+                // Fake user update
+                int r = new Random().nextInt(26);
+                String userId = "Bot" + r;
+                char randomChar = (char) (r + 'A');
+                UserInfo botUser = new UserInfo(userId, "Bot " + randomChar);
+                fieldValues.put("user", botUser);
+                fieldValues.put("user", null);
             }, () -> {
                 Notification notification = new Notification("Something is wrong with the sample data!");
                 notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
                 notification.open();
             });
-
-            int r = new Random().nextInt(26);
-            String userId = "Bot" + r;
-            char randomChar = (char)(r + 'A');
-            UserInfo botUser = new UserInfo(userId, "Bot " + randomChar);
-            fieldValues.put("user", botUser);
-            fieldValues.put("user", null);
         });
-        generateConfict.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+        generateConfict.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY,
+                ButtonVariant.LUMO_SMALL);
         add(generateConfict);
 
         add(createTitle());
@@ -144,10 +148,10 @@ public class EarlyWarningView extends Div {
 
         avatarGroup.setOwnAvatarVisible(false);
 
-        CollaborationEngine.getInstance().openTopicConnection(this, "early-warning",
+        CollaborationEngine.getInstance().openTopicConnection(this, TOPIC_NAME,
                 localUser, topic -> {
                     fieldValues = topic
-                            .getNamedMap("whodonnit");
+                            .getNamedMap(MAP_NAME);
                     fieldValues.setExpirationTimeout(Duration.ZERO); // Zero timeout here?
                     return fieldValues.subscribe(event -> {
                         if ("user".equals(event.getKey())) {
@@ -225,7 +229,7 @@ public class EarlyWarningView extends Div {
     }
 
     private Component createTitle() {
-        return new H3("Personal information");
+        return new H3("Contact #" + ENTITY_ID);
     }
 
     private Component createFormLayout() {

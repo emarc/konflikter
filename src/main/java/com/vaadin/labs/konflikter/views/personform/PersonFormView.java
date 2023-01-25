@@ -36,6 +36,7 @@ import com.vaadin.labs.konflikter.views.MainLayout;
 @Route(value = "person-form", layout = MainLayout.class)
 @Uses(Icon.class)
 public class PersonFormView extends Div {
+    private static final Long ENTITY_ID = 1l;
 
     private TextField firstName = new TextField("First name");
     private TextField lastName = new TextField("Last name");
@@ -72,7 +73,6 @@ public class PersonFormView extends Div {
         public void setVisible(boolean visible) {
             super.setVisible(visible);
             resolveButton.setVisible(visible);
-
         }
     };
 
@@ -83,7 +83,7 @@ public class PersonFormView extends Div {
         addClassName("person-form-view");
 
         this.sampleEntityService = sampleEntityService;
-        sampleEntityService.get(2l).ifPresentOrElse(entity -> {
+        sampleEntityService.get(ENTITY_ID).ifPresentOrElse(entity -> {
             sampleEntity = entity;
         }, () -> {
             Notification notification = new Notification("Something is wrong with the sample data!");
@@ -92,7 +92,7 @@ public class PersonFormView extends Div {
         });
 
         Button generateConfict = new Button("Generate conflict", click -> {
-            sampleEntityService.get(2l).ifPresentOrElse(entity -> {
+            sampleEntityService.get(ENTITY_ID).ifPresentOrElse(entity -> {
                 entity.createConflict();
                 sampleEntityService.update(entity);
                 Notification.show("Cool. Do some changes of your own, then save.");
@@ -120,8 +120,8 @@ public class PersonFormView extends Div {
 
         conflictMessage.setVisible(false);
         conflictMessage.setClassName("text-xs p-s");
-        conflictMessage.getStyle().set("background-color", "orange");
-        conflictMessage.getStyle().set("color", "white");
+        conflictMessage.getStyle().set("border", "1px solid var(--lumo-primary-color)");
+        conflictMessage.getStyle().set("color", "var(--lumo-primary-color)");
         add(conflictMessage);
 
         add(createButtonLayout());
@@ -158,7 +158,7 @@ public class PersonFormView extends Div {
     }
 
     private Component createTitle() {
-        return new H3("Personal information");
+        return new H3("Contact #" + ENTITY_ID);
     }
 
     private Component createFormLayout() {
