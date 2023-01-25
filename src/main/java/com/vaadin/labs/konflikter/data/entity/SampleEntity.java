@@ -202,8 +202,10 @@ public class SampleEntity extends AbstractEntity {
             this.city = "Turku";
         if (Math.random() > 0.2)
             this.csc = "" + Math.round(Math.random() * 1000 + 1000);
-        if (this.dateOfBirth != null && Math.random() > 0.2)
-            this.dateOfBirth = this.dateOfBirth.plusDays(1);
+        /* DateField is problemmatic
+         * if (this.dateOfBirth != null && Math.random() > 0.2)
+         * this.dateOfBirth = this.dateOfBirth.plusDays(1);
+         */
         if (Math.random() > 0.2)
             this.email += ".com";
         if (Math.random() > 0.2)

@@ -164,7 +164,9 @@ public class PersonFormView extends Div {
     private Component createFormLayout() {
         FormLayout formLayout = new FormLayout();
         email.setErrorMessage("Please enter a valid email address");
-        formLayout.add(firstName, lastName, dateOfBirth, phone, email, occupation);
+        formLayout.add(firstName, lastName, phone, email, occupation, dateOfBirth);
+
+        dateOfBirth.setHelperText("Bug: DateField interferes with merge widget");
 
         formLayout.add(street, 2);
         postalCode.setPattern("\\d*");
